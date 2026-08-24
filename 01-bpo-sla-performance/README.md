@@ -23,50 +23,87 @@ la dotación de personal por turno?
 - **Nombre:** Call Center Metrics Dataset
 - **Fuente:** Kaggle (dataset real, anonimizado)
 - **Link:** https://www.kaggle.com/datasets/unifrancouni/call-center-metrics-dataset
-- **Tamaño:** por confirmar tras la descarga (pendiente de EDA inicial)
+- **Tamaño:** 270 filas × 7 columnas — una fila por combinación
+  agente × fecha × producto × idioma, con volumen (`calls_handled`), tiempo
+  promedio de manejo (`avg_aht`) y el flag de cumplimiento (`std_pass`).
+  Cubre enero 2020 (27 filas, 1 agente piloto) y julio 2020 (243 filas, los
+  10 agentes en paralelo).
 
 > El archivo no se versiona en este repo. Descargar manualmente desde el link
-> anterior y colocar el CSV en `data/`.
+> anterior y colocar el CSV en `data/` como `call_metrics_dataset.csv`.
 
 ## Metodología
 
-Siguiendo el framework CRISP-DM adaptado del portafolio:
+Siguiendo el framework CRISP-DM adaptado del portafolio (ver notebooks en
+`notebooks/`, en orden):
 
-1. **Business Understanding:** formalizar el incumplimiento de SLA como
-   variable objetivo binaria (cumple/no cumple) y definir el costo de negocio
-   asociado a cada tipo de error.
-2. **Data Understanding:** EDA de nulos, outliers en tiempos de espera/manejo,
-   cardinalidad de agentes/colas/canales, y verificación de que no existan
-   variables que filtren información posterior al momento de la decisión
-   (data leakage, ej. duración total de la llamada si el SLA se define sobre
-   el tiempo de espera).
-3. **Data Preparation:** limpieza de timestamps, creación de variables
-   temporales (hora, día de semana, franja pico), agregaciones por
-   agente/cola/canal, y evaluación de desbalance de clases en la variable de
-   incumplimiento.
-4. **Modeling:**
-   - *Enfoque analista:* dashboard descriptivo de volumen por canal y hora,
-     tasa de incumplimiento por agente y por cola, y una aproximación de
-     teoría de colas básica (Erlang C / relación entre volumen, dotación y
-     tiempo de espera esperado).
-   - *Enfoque científico:* modelo de clasificación (regresión logística como
-     baseline, XGBoost como modelo principal) para predecir el riesgo de
-     incumplimiento de SLA por ticket/llamada.
-5. **Evaluation:** métricas de clasificación (precision, recall, F1, AUC-ROC)
-   interpretadas junto al costo real de sub-dotación (SLA incumplido) vs.
-   sobre-dotación (costo de personal ocioso), no solo accuracy.
-6. **Deployment/Storytelling:** dashboard en Streamlit para el equipo de
-   workforce planning + este README como resumen ejecutivo.
+1. **Business Understanding:** se redefinió el target como `sla_risk` (riesgo
+   de *incumplir*, en vez de "cumple") para que el recall del modelo se
+   alinee directamente con lo que le importa al negocio: cuántos
+   incumplimientos reales se detectan a tiempo.
+2. **Data Understanding** (`01_eda.ipynb`): sin nulos ni duplicados. Se
+   detectó **data leakage**: `avg_aht` determina casi por completo
+   `std_pass` (es la métrica contra la que se mide el propio SLA), por lo
+   que se excluyó como feature. También se identificó que la aparente
+   "inconsistencia de granularidad" entre enero y julio era en realidad la
+   expansión de un piloto de 1 agente al equipo completo de 10.
+3. **Data Preparation** (`02_data_preparation.ipynb`): reemplazo de
+   `avg_aht` por features históricas del agente calculadas solo con datos
+   *anteriores* a cada fila (`agent_prior_pass_rate`, `agent_prior_avg_calls`,
+   vía ventana expandiente), one-hot encoding de categóricas, y **split
+   train/test cronológico** (no aleatorio) para evaluar predicción hacia
+   adelante en el tiempo.
+4. **Modeling** (`03_modeling.ipynb`):
+   - *Enfoque analista:* tasa de incumplimiento por agente, producto,
+     idioma y día de semana; volumen vs. cumplimiento (`01_eda.ipynb`
+     sección 11, replicado en el dashboard).
+   - *Enfoque científico:* Logistic Regression (baseline) vs. XGBoost
+     (principal), comparados contra un baseline trivial (DummyClassifier) y
+     validados con Stratified K-Fold sobre train.
+5. **Evaluation** (`04_evaluation.ipynb`): el umbral de decisión se optimizó
+   contra un costo de negocio explícito (costo de un incumplimiento no
+   detectado vs. costo de una alerta innecesaria), no por accuracy ni por el
+   umbral por defecto de 0.5.
+6. **Deployment/Storytelling** (`dashboard/app.py`): dashboard en Streamlit
+   con 4 vistas (resumen ejecutivo, análisis descriptivo, modelo predictivo,
+   simulador de costo interactivo) para el equipo de workforce planning.
 
 ## Resultados clave (cuantificados)
 
-_Pendiente — se completará una vez ejecutado el análisis y el modelado._
+- **XGBoost predice el riesgo de incumplimiento con ROC-AUC = 0.99 y
+  PR-AUC = 0.99** en el set de test (predicción hacia adelante en el
+  tiempo), superando a Logistic Regression (ROC-AUC 0.97) y al baseline
+  trivial (ROC-AUC 0.50, 0% recall por construcción).
+- **Recall de 97–100% en la clase "en riesgo"** con precision de 89–90% en
+  el umbral óptimo — el modelo detecta prácticamente todos los
+  incumplimientos reales del período de test.
+- **El umbral óptimo de negocio es 0.44, no el 0.5 por defecto**, bajo
+  supuestos de costo ilustrativos (incumplimiento no detectado = 150,
+  alerta innecesaria = 25). En ese umbral, el costo total se reduce **~98%**
+  frente a no usar ningún sistema de alerta.
+- **Hallazgo que corrigió una hipótesis inicial:** se esperaba que el
+  historial del agente dominara la importancia de features; en cambio,
+  `calls_handled` (volumen del día) y `product_id` encabezan el ranking —
+  el riesgo está más ligado al volumen y al producto/cola que al agente.
 
 ## Limitaciones
 
-_Pendiente — se documentarán las limitaciones del dataset y del modelo tras
-el EDA (p. ej. representatividad temporal, granularidad de canales, sesgos
-en la asignación de agentes)._
+- **Dataset muy pequeño** (171 filas de train, 99 de test). Las métricas
+  del modelo son inusualmente altas para ese tamaño de muestra — es tan
+  consistente con señal real como con sobreajuste o con que el dataset sea
+  sintético/simplificado. No debe tratarse como una predicción lista para
+  producción sin validar contra más meses de datos.
+- **Costos de negocio ilustrativos:** `COST_FN` y `COST_FP` usados en la
+  evaluación (y ajustables en el dashboard) son valores de ejemplo, no
+  cifras reales de penalidad contractual ni de costo operativo — deben
+  reemplazarse antes de fijar un umbral en producción.
+- **El agente piloto (agente 3) no tiene filas en el período de test**
+  (las últimas fechas de julio), así que su desempeño específico no puede
+  validarse en el holdout, aunque sí aporta historial de entrenamiento.
+- **Sin columnas de canal ni de hora del día** (a diferencia del alcance
+  inicial planteado) — el dataset real está agregado a nivel diario por
+  agente/producto/idioma, así que el análisis de teoría de colas y de
+  franjas horarias no fue posible con este dataset.
 
 ## Cómo correr este proyecto
 
@@ -77,11 +114,12 @@ source venv/bin/activate  # En Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # 1. Descargar el dataset desde el link de Kaggle indicado arriba
-#    y colocarlo en 01-bpo-sla-performance/data/
+#    y colocarlo en 01-bpo-sla-performance/data/call_metrics_dataset.csv
 
-# 2. Explorar el EDA
+# 2. Correr los notebooks en orden (cada uno alimenta al siguiente)
 jupyter notebook 01-bpo-sla-performance/notebooks/
+#   01_eda.ipynb -> 02_data_preparation.ipynb -> 03_modeling.ipynb -> 04_evaluation.ipynb
 
-# 3. Correr el dashboard (una vez desarrollado)
+# 3. Correr el dashboard
 streamlit run 01-bpo-sla-performance/dashboard/app.py
 ```
