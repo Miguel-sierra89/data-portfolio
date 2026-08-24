@@ -1,0 +1,106 @@
+# ============================
+# Datos pesados y artefactos
+# ============================
+# Los datasets se descargan manualmente en cada carpeta data/ (ver README de cada proyecto)
+**/data/*
+!**/data/.gitkeep
+*.csv
+*.tsv
+*.parquet
+*.json.gz
+*.zip
+*.7z
+
+# Modelos entrenados / checkpoints / embeddings / índices vectoriales
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.hdf5
+*.pt
+*.pth
+*.onnx
+*.faiss
+*.index
+checkpoints/
+models/
+mlruns/
+wandb/
+
+# ============================
+# Entornos virtuales
+# ============================
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+__pypackages__/
+
+# ============================
+# Secretos y configuración local
+# ============================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.yaml
+config.local.yaml
+
+# ============================
+# Python
+# ============================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+.installed.cfg
+*.egg
+
+# ============================
+# Jupyter / notebooks
+# ============================
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ============================
+# Testing / coverage / linting
+# ============================
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+
+# ============================
+# Streamlit / FastAPI
+# ============================
+.streamlit/secrets.toml
+*.log
+logs/
+
+# ============================
+# IDE / SO
+# ============================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================
+# Otros
+# ============================
+*.bak
+*.tmp
+.cache/
