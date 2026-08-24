@@ -21,54 +21,93 @@ tendencia observada?
 - **Nombre:** Netflix Movies and TV Shows
 - **Fuente:** Kaggle
 - **Link:** https://www.kaggle.com/datasets/shivamb/netflix-shows
-- **Tamaño:** ~8.800 títulos (películas y series), con metadata de género,
-  país, año, rating, elenco y descripción
+- **Tamaño:** 8.807 títulos (6.131 películas, 2.676 series), con metadata de
+  género, país, año, rating, elenco y descripción — sin ninguna métrica de
+  audiencia (vistas, ratings de usuarios, retención).
 
 > El archivo no se versiona en este repo. Descargar manualmente desde el link
-> anterior y colocar el CSV en `data/`.
+> anterior y colocar el CSV en `data/` como `netflix_titles.csv`.
 
 ## Metodología
 
-1. **Business Understanding:** traducir "maximizar engagement" en proxies
-   medibles a partir de la metadata disponible (concentración de
-   género/país/rating, año de incorporación, evolución del mix de contenido
-   en el tiempo).
-2. **Data Understanding:** EDA de nulos (especialmente en `director`,
-   `cast`, `country`), cardinalidad de género y país (campos multivaluados),
-   outliers en duración, y consistencia de fechas de incorporación al
-   catálogo.
-3. **Data Preparation:** normalización de campos multivaluados (género,
-   país, elenco) a formato analizable, extracción de features de texto desde
-   `description`, y construcción de variables temporales (año/década de
-   producción vs. año de incorporación al catálogo).
-4. **Modeling:**
-   - *Enfoque analista:* EDA de brechas de contenido por género, país y
-     rating, comparando la composición del catálogo contra tendencias
-     observables en los propios datos (concentración vs. diversidad,
-     evolución temporal del mix).
-   - *Enfoque científico:* sistema de recomendación content-based basado en
-     similitud de coseno sobre embeddings de texto (descripción + género +
-     elenco), y un modelo que prediga la probabilidad de éxito de un título
-     según sus atributos.
-5. **Evaluation:** para el recomendador, evaluación cualitativa de
-   similitud y cobertura de catálogo; para el modelo de éxito, métricas de
-   clasificación (precision/recall/AUC) sobre el proxy de éxito definido,
-   evitando sobreinterpretar accuracy dado el desbalance esperado entre
-   contenido "exitoso" y el resto.
-6. **Deployment/Storytelling:** dashboard en Streamlit para explorar brechas
-   de catálogo y probar el recomendador + este README como resumen
-   ejecutivo.
+Siguiendo el framework CRISP-DM adaptado del portafolio (ver notebooks en
+`notebooks/`, en orden):
+
+1. **Business Understanding:** "maximizar engagement" no se puede medir
+   directamente con este dataset (no trae datos de audiencia) — se acotó el
+   alcance a lo que la metadata sí permite: brechas de catálogo (enfoque
+   analista) y un recomendador content-based + un modelo sobre una definición
+   honesta de "éxito" (enfoque científico), documentando explícitamente qué
+   queda fuera de alcance.
+2. **Data Understanding** (`01_eda.ipynb`): sin duplicados, pero con nulos
+   altos y esperables en `director` (29.9%) y `cast`/`country` (9.4% cada
+   uno). Se detectó un **bug de datos real**: 3 títulos con el valor de
+   duración filtrado en la columna `rating` por un corrimiento de columna en
+   el CSV original. `country` y `listed_in` son campos multivaluados (748
+   combinaciones de país → 127 países individuales al separar).
+3. **Data Preparation** (`02_data_preparation.ipynb`): corrección del bug,
+   nulos imputados como `"Unknown"` (no se elimina ninguna fila), separación
+   de `duration` en `duration_min` (películas) y `n_seasons` (series), y
+   construcción de `content_soup` (texto combinado) para el recomendador.
+4. **Modeling** (`03_modeling.ipynb`):
+   - *Enfoque analista:* brechas de catálogo por país, género, rating y año
+     de incorporación (`01_eda.ipynb`, replicado en el dashboard).
+   - *Enfoque científico:* recomendador content-based (TF-IDF + similitud de
+     coseno sobre `content_soup`) sobre todo el catálogo, y un modelo de
+     clasificación (Logistic Regression, XGBoost) sobre `renewed` — la
+     redefinición honesta de "éxito": si una serie fue renovada para una
+     segunda temporada, en vez de un proxy inventado para todo el catálogo.
+5. **Evaluation:** el recomendador se evaluó cualitativamente (no hay forma
+   cuantitativa de validarlo sin datos de audiencia); el modelo de renovación
+   se evaluó con ROC-AUC/PR-AUC (no accuracy). No se construyó un notebook de
+   evaluación de costo — a diferencia de los proyectos 01 y 02, acá no existe
+   una matriz de costo de negocio clara para ninguna de las dos piezas.
+6. **Deployment/Storytelling** (`dashboard/app.py`): dashboard en Streamlit
+   con 4 vistas (resumen ejecutivo, brechas de catálogo, recomendador
+   interactivo, modelo de renovación).
 
 ## Resultados clave (cuantificados)
 
-_Pendiente — se completará una vez ejecutado el análisis y el modelado._
+- **Concentración fuerte de catálogo:** Estados Unidos aparece en 41.9% de
+  los títulos (3.689 de 8.807), India muy por detrás (1.046) — la brecha de
+  catálogo más clara del dataset.
+- **El recomendador content-based funciona cualitativamente** (agrupa por
+  género/tono/reparto compartido), pero **no se puede validar
+  cuantitativamente** contra engagement real — limitación estructural del
+  dataset, no del método.
+- **El modelo de renovación tiene ROC-AUC ≈ 0.72 / PR-AUC ≈ 0.55** sobre
+  2.676 series (33% de tasa de renovación) — muy por debajo del 0.99 de
+  project 01 o el 0.79 de project 02, consistente con que la metadata de
+  catálogo es un proxy débil de una decisión que depende de datos de
+  audiencia que este dataset no tiene.
+- **País y género pesan más que descripción o director** en la importancia
+  de features del modelo de renovación — ninguno de los dos aparece en el
+  top 10.
+- **Decisión metodológica documentada:** el split de train/test para el
+  modelo de renovación es aleatorio estratificado, no cronológico —
+  justificado porque el sesgo de madurez del target (títulos recientes
+  tuvieron menos tiempo de renovarse) contamina todo el dataset, no solo el
+  futuro.
 
 ## Limitaciones
 
-_Pendiente — se documentarán las limitaciones del dataset y del modelo tras
-el EDA (p. ej. el dataset no incluye métricas reales de audiencia/engagement,
-por lo que "éxito" debe aproximarse con un proxy construido a partir de la
-metadata disponible)._
+- **Sin métrica de audiencia:** es la limitación central del proyecto — no
+  hay vistas, ratings de usuarios ni retención. Todo lo "predictivo" de este
+  proyecto es necesariamente más débil que en project 01/02, y se documentó
+  así en cada paso en vez de inflar artificialmente el alcance.
+- **`renewed` tiene sesgo de madurez:** una serie de 2021 tuvo mucho menos
+  tiempo para ser renovada que una de 2015, independientemente de su
+  calidad — ningún split evita esto, es una limitación de la definición del
+  target.
+- **Las películas quedan fuera del modelo predictivo** — no existe una señal
+  equivalente a la renovación para ellas en este dataset; sí participan
+  plenamente del recomendador.
+- **El recomendador es puramente de contenido** (no collaborative
+  filtering): agrupa por similitud textual/de género, no por patrones de
+  co-consumo real entre usuarios, que este dataset no puede observar.
+- **Cobertura temporal parcial:** el dataset llega hasta septiembre de 2021
+  — cualquier análisis de tendencia de incorporación de catálogo debe leerse
+  con esa fecha de corte en mente.
 
 ## Cómo correr este proyecto
 
@@ -79,11 +118,12 @@ source venv/bin/activate  # En Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # 1. Descargar el dataset desde el link de Kaggle indicado arriba
-#    y colocarlo en 03-entertainment-content-strategy/data/
+#    y colocarlo en 03-entertainment-content-strategy/data/netflix_titles.csv
 
-# 2. Explorar el EDA
+# 2. Correr los notebooks en orden (cada uno alimenta al siguiente)
 jupyter notebook 03-entertainment-content-strategy/notebooks/
+#   01_eda.ipynb -> 02_data_preparation.ipynb -> 03_modeling.ipynb
 
-# 3. Correr el dashboard (una vez desarrollado)
+# 3. Correr el dashboard
 streamlit run 03-entertainment-content-strategy/dashboard/app.py
 ```
