@@ -35,13 +35,15 @@ FAISS · Streamlit · FastAPI
 
 ## Proyectos
 
-| # | Proyecto | Dominio | Pregunta de negocio | Enfoque analista | Enfoque científico |
-|---|----------|---------|----------------------|-------------------|---------------------|
-| 1 | [BPO — SLA Performance](01-bpo-sla-performance/) | Call Center / Workforce Planning | ¿Cómo reducimos el % de tickets que incumplen SLA y cómo optimizamos la dotación de personal? | Volumen por canal/hora, tasa de incumplimiento por agente/cola, teoría de colas | Clasificación de riesgo de incumplimiento de SLA |
-| 2 | [Banca — Detección de Fraude](02-banking-fraud-detection/) | Fintech / Riesgo | ¿Qué transacciones son fraudulentas y cuál es el umbral de decisión que minimiza el costo total? | Distribución de clases, análisis costo-beneficio del umbral | Clasificación con desbalance extremo (SMOTE, class weights, Isolation Forest), SHAP sobre PCA |
-| 3 | [Entretenimiento — Estrategia de Contenido](03-entertainment-content-strategy/) | Streaming / Producto | ¿Qué contenido debería adquirir o producir la plataforma para maximizar engagement? | EDA de brechas de catálogo por género/país/rating | Recomendador content-based + modelo de probabilidad de éxito |
-| 4 | [Jira — Estimación de Esfuerzo](04-jira-effort-estimation/) | Ingeniería / Agile | ¿Cómo automatizamos la estimación de story points para dejar de romper la planificación de sprints? | Cycle time, lead time, burndown, cuellos de botella | NLP (embeddings + regresión) para predecir story points |
-| 5 | [IA Aplicada — Matching de Candidatos con RAG](05-ai-resume-matching-rag/) | RRHH / IA Aplicada | ¿Cómo automatizamos el matching semántico entre vacantes y CVs con explicabilidad del ranking? | — | Embeddings + FAISS + LLM para extracción de skills y justificación del ranking (servicio FastAPI) |
+| # | Proyecto | Dominio | Pregunta de negocio | Enfoque científico | Resultado clave |
+|---|----------|---------|----------------------|---------------------|------------------|
+| 1 | [BPO — SLA Performance](01-bpo-sla-performance/) | Call Center / Workforce Planning | ¿Cómo reducimos el % de tickets que incumplen SLA y cómo optimizamos la dotación de personal? | XGBoost para riesgo de incumplimiento + umbral óptimo por costo de negocio | ROC-AUC 0.99, ~98% de reducción de costo vs. no usar modelo (dataset chico, ver limitaciones) |
+| 2 | [Banca — Detección de Fraude](02-banking-fraud-detection/) | Fintech / Riesgo | ¿Qué transacciones son fraudulentas y cuál es el umbral de decisión que minimiza el costo total? | XGBoost + SMOTE vs. class weights vs. Isolation Forest, matriz de costo real (monto real de fraude) | PR-AUC 0.791, 60.6% de reducción de costo — "alertar siempre" resultó ser peor que no hacer nada |
+| 3 | [Entretenimiento — Estrategia de Contenido](03-entertainment-content-strategy/) | Streaming / Producto | ¿Qué contenido debería adquirir o producir la plataforma para maximizar engagement? | Recomendador content-based (TF-IDF + coseno) + modelo de renovación de series | ROC-AUC 0.72 — modesto pero honesto: sin datos de audiencia, "éxito" se redefinió como renovación real |
+| 4 | [Jira — Estimación de Esfuerzo](04-jira-effort-estimation/) | Ingeniería / Agile | ¿Cómo automatizamos la estimación de story points para dejar de romper la planificación de sprints? | Embeddings + regresión (Ridge), pooled vs. 16 modelos por proyecto | MAE ≈ 3 story points; ni pooled ni por-proyecto gana siempre — depende de la escala de cada equipo |
+| 5 | [IA Aplicada — Matching de Candidatos con RAG](05-ai-resume-matching-rag/) | RRHH / IA Aplicada | ¿Cómo automatizamos el matching semántico entre vacantes y CVs con explicabilidad del ranking? | Embeddings + FAISS, explicabilidad por overlap de skills (sin LLM, por diseño), servicio FastAPI | Spearman 0.30 vs. referencia externa; `POST /match/text` matchea vacantes en texto libre en vivo |
+
+Los 5 datasets planeados originalmente no siempre coincidieron con lo disponible en la práctica — dos casos concretos quedaron documentados como decisiones explícitas, no como atajos silenciosos: en **project 04** el dataset de Zenodo pesaba 13.8 TB y requería login, así que se sustituyó por el dataset académico de 23.313 issues que originó esa línea de investigación; en **project 05** el CSV descargado resultó ser pares candidato-vacante con `matched_score` ya calculado, en vez de CVs sueltos — un punto de partida mejor, que cambió el diseño del pipeline. Cada README de proyecto explica el porqué.
 
 ## Cómo navegar este repo
 
@@ -72,6 +74,22 @@ en su propio README.
 
 ## Estado del portafolio
 
-Los 5 proyectos están inicializados con su contexto de negocio, pregunta,
-dataset y metodología definidos. Los resultados cuantificados se irán
-completando a medida que se ejecute el análisis y modelado de cada uno.
+**Los 5 proyectos están completos de punta a punta:** EDA → preparación de
+datos → modelado → evaluación (donde aplicaba una matriz de costo real) →
+storytelling (dashboard en Streamlit o servicio FastAPI) → README con
+resultados y limitaciones reales, no plantillas pendientes.
+
+Algunos denominadores comunes entre los 5, más allá de los números de cada
+tabla:
+
+- **Cada proyecto encontró al menos un hallazgo real de calidad de datos**
+  que cambió el diseño del pipeline (leakage en project 01, duplicados en
+  project 02, un bug de columnas corridas en project 03, un dataset
+  reemplazado en project 04, campos serializados como listas de Python en
+  project 05) — documentados como decisiones explícitas, no escondidos.
+- **Ninguna métrica se presenta sin su contexto de negocio:** accuracy no
+  aparece como métrica principal en ningún proyecto con desbalance de
+  clases; los umbrales de decisión se optimizan contra costo, no se dejan
+  en el 0.5 por defecto.
+- **Las limitaciones son específicas de cada proyecto, no genéricas** — cada
+  README dice explícitamente qué no se puede afirmar con ese dataset.
