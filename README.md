@@ -4,6 +4,16 @@ Portafolio de 5 proyectos end-to-end que demuestran el ciclo completo de trabajo
 con datos: desde la pregunta de negocio hasta un modelo validado y comunicado a
 una audiencia no técnica.
 
+## Sobre mí
+
+Soy Miguel Alejandro Sierra Jaramillo. Estoy formándome en data a mi manera:
+armando proyectos propios, de punta a punta, para vincularme de verdad con
+este mundo — no solo para completar un curso. Lo que más me mueve es la idea
+de ayudar a que los negocios tomen mejores decisiones con lo que ya tienen en
+sus datos, para que puedan progresar.
+
+[LinkedIn](https://www.linkedin.com/in/miguel-sierra-a20a18a0/) · [GitHub](https://github.com/Miguel-sierra89) · miguelalejandrosierra@gmail.com
+
 Cada proyecto sigue el mismo framework metodológico (CRISP-DM adaptado) y
 separa explícitamente dos roles dentro del mismo flujo de trabajo:
 
