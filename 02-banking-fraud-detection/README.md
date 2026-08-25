@@ -1,5 +1,12 @@
 # 02 — Banca: Detección de Fraude en Transacciones
 
+> Este es el dataset clásico de fraude (el de ULB), así que no esperaba
+> sorpresas de calidad de datos. Igual apareció una: 1.081 filas duplicadas
+> exactas, 19 de ellas fraude — nada grave, pero suficiente para arruinar
+> la evaluación si se deduplica después de separar train/test en vez de
+> antes. Es el tipo de detalle que se pasa por alto fácil si uno da por
+> sentado que un dataset "conocido" ya viene limpio.
+
 ## Contexto de negocio
 
 Las entidades financieras enfrentan un trade-off constante en la detección de

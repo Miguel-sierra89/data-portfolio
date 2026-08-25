@@ -1,5 +1,14 @@
 # 04 — Jira: Estimación de Esfuerzo en Equipos Ágiles
 
+> Acá tuve que cambiar de plan a mitad de camino: el dataset que había
+> elegido originalmente (el Public Jira Dataset de Zenodo) pesa 13.8 TB y
+> pide login — totalmente inviable para correrlo en una laptop. En vez de
+> forzarlo, lo cambié por el dataset académico que dio origen a esa
+> investigación (23.313 issues reales, 16 proyectos open-source), que
+> resuelve el mismo problema de negocio a una escala manejable. Lo dejo
+> documentado acá porque me parece más útil mostrar cómo se resuelve un
+> bloqueo real que esconderlo.
+
 ## Contexto de negocio
 
 En equipos ágiles, la estimación de esfuerzo (story points) suele hacerse de

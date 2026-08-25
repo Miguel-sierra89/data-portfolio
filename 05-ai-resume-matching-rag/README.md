@@ -1,5 +1,13 @@
 # 05 — IA Aplicada: Sistema de Matching de Candidatos con RAG
 
+> Este fue el proyecto con la sorpresa más agradable: pensé que iba a bajar
+> ~2.400 CVs sueltos y tener que armar los pares candidato-vacante yo mismo.
+> El CSV real ya venía con esos pares armados y un `matched_score`
+> calculado — mejor punto de partida del que había planeado. También decidí
+> a propósito **no** llamar a ningún LLM real acá: no tenía sentido dejar un
+> notebook público de portafolio dependiendo de una API key de pago para
+> poder correrse.
+
 ## Contexto de negocio
 
 Los procesos de reclutamiento tradicionales filtran CVs por coincidencia

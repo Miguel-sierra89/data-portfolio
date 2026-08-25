@@ -1,5 +1,12 @@
 # 01 — BPO: Análisis de Performance y Cumplimiento de SLA
 
+> Arranqué este proyecto esperando un ejercicio más o menos típico de
+> series de tiempo (canal, hora, volumen). El dataset real resultó más
+> chico y más raro de lo que pensaba, y el hallazgo más importante no fue
+> ningún modelo — fue darme cuenta de que la variable `avg_aht` básicamente
+> *era* el target disfrazado. Ese hallazgo terminó definiendo el resto del
+> proyecto más que cualquier elección de algoritmo.
+
 ## Contexto de negocio
 
 En un centro de contacto (BPO/Call Center), el incumplimiento del SLA

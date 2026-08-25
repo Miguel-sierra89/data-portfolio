@@ -1,5 +1,12 @@
 # 03 — Entretenimiento: Estrategia de Contenido
 
+> Este fue el proyecto donde más tuve que resistir la tentación de
+> "completar" el dataset con algo que no estaba ahí. El catálogo de Netflix
+> no trae ninguna métrica de audiencia — ni vistas, ni rating de usuarios,
+> nada. Podría haber inventado un proxy de "éxito" y seguir de largo, pero
+> me pareció más honesto redefinir el problema a algo que el dato sí puede
+> sostener: si una serie fue renovada o no. Menos vistoso, más real.
+
 ## Contexto de negocio
 
 Las plataformas de streaming compiten por retención y engagement mediante la
