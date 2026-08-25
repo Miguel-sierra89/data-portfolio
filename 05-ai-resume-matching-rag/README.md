@@ -19,56 +19,97 @@ candidato fue rankeado en esa posición?
 
 ## Dataset
 
-- **Nombre:** Resume Dataset
+- **Nombre:** Resume Dataset (`resume_data.csv`)
 - **Fuente:** Kaggle
 - **Link:** https://www.kaggle.com/datasets/saugataroyarghya/resume-dataset
-- **Tamaño:** ~2.400 CVs reales, categorizados por rol/industria
+- **Tamaño real:** el dataset descargado resultó ser distinto — y mejor para
+  este proyecto — que lo planeado originalmente. No son CVs sueltos
+  categorizados: son **9.544 pares candidato–vacante ya emparejados**, que
+  se reducen a **344 CVs únicos** y **28 vacantes únicas** tras deduplicar,
+  con un `matched_score` precalculado por el creador del dataset (usado como
+  referencia externa de validación, no como ground truth humano).
 
 > El archivo no se versiona en este repo. Descargar manualmente desde el link
-> anterior y colocar los archivos en `data/`.
+> anterior y colocar el CSV en `data/` como `resume_data.csv`.
 
 ## Metodología
 
-1. **Business Understanding:** enmarcar el matching como un problema de
-   recuperación semántica (retrieval) sobre un espacio vectorial de
-   embeddings, seguido de una capa de explicabilidad sobre el resultado, en
-   lugar de un simple filtro de keywords.
-2. **Data Understanding:** EDA de la distribución de categorías/roles de los
-   CVs, calidad y longitud del texto, nulos, y detección de posibles sesgos
-   de representación (categorías sobre o sub-representadas) que puedan
-   afectar el matching.
-3. **Data Preparation:** limpieza de texto (normalización, remoción de
-   ruido de formato propio de CVs extraídos de PDF/Word), y extracción
-   estructurada de skills como paso previo a la vectorización.
-4. **Modeling:**
-   - Pipeline de embeddings con `sentence-transformers` para vacantes y
-     CVs.
-   - Búsqueda vectorial de similitud con FAISS para recuperar los candidatos
-     más relevantes a una vacante dada.
-   - Capa de LLM que extraiga skills estructurados desde el CV y justifique
-     en lenguaje natural por qué un candidato fue rankeado en cada posición
-     (explicabilidad del ranking, no solo un score).
-   - Exposición como servicio mínimo vía FastAPI (endpoint de matching +
-     endpoint de explicación).
-5. **Evaluation:** evaluación cualitativa de relevancia del top-k
-   recuperado (¿los candidatos rankeados arriba son razonables para la
-   vacante?), y verificación de que las justificaciones generadas por el LLM
-   sean consistentes con los skills realmente extraídos del CV (evitar
-   alucinaciones en la explicación).
-6. **Deployment/Storytelling:** servicio FastAPI mínimo como demo funcional
-   + este README como resumen ejecutivo del enfoque.
+Siguiendo el framework CRISP-DM adaptado del portafolio (ver notebooks en
+`notebooks/`, en orden):
+
+1. **Business Understanding:** matching como recuperación semántica
+   (embeddings + FAISS) sobre CVs y vacantes reales, con una capa de
+   explicabilidad — deliberadamente **sin** depender de una API de LLM en el
+   pipeline reproducible (ver punto 4).
+2. **Data Understanding** (`01_eda.ipynb`): el dataset real trae campos
+   estructurados de ambos lados (CV y vacante) más `matched_score` — no CVs
+   sueltos. Se corrigieron dos bugs de datos: un BOM incrustado en el nombre
+   de una columna, y dos columnas literalmente llamadas `responsibilities`
+   que pandas desambiguó en silencio. Se verificó que `matched_score` no es
+   un score trivial de overlap de keywords (correlación ~0.13).
+3. **Data Preparation** (`02_data_preparation.ipynb`): **hallazgo nuevo** —
+   casi todos los campos del CV venían serializados como strings de listas
+   de Python (a veces anidadas, a veces con `None`), parseados de forma
+   segura con `ast.literal_eval`. Deduplicación a 344 candidatos y 28
+   vacantes, con perfil de texto combinado por cada uno.
+4. **Modeling** (`03_modeling.ipynb`): embeddings (`sentence-transformers`,
+   `all-MiniLM-L6-v2`) + índice FAISS sobre los 344 candidatos únicos.
+   **Explicabilidad sin LLM por diseño:** en vez de llamar a una API de pago
+   dentro de un notebook público de portafolio, se implementó una
+   justificación determinista por overlap de skills, con el camino de
+   mejora (LLM real) documentado para el servicio FastAPI.
+5. **Evaluation:** validación cuantitativa del ranking semántico contra
+   `matched_score` (correlación de Spearman), no solo evaluación cualitativa
+   — reportada con honestidad como señal moderada, no un ajuste perfecto.
+6. **Deployment** (`app/main.py`): servicio FastAPI mínimo con matching por
+   `job_id` existente o por **texto libre de vacante** (el caso de uso real:
+   una vacante nueva, no vista en el dataset).
 
 ## Resultados clave (cuantificados)
 
-_Pendiente — se completará una vez ejecutado el análisis y el desarrollo del
-pipeline._
+- **El pipeline de embeddings + FAISS funciona end-to-end** sobre los 344
+  candidatos únicos, recuperando candidatos semánticamente afines a una
+  vacante — incluyendo vacantes en texto libre no presentes en el dataset
+  original, vía `POST /match/text`.
+- **Validación contra `matched_score`:** correlación de Spearman ≈ **0.30**
+  (pooled sobre ~9.500 pares, p ≈ 10⁻²⁰⁰ — altamente significativa), con un
+  rango de 0.10 a 0.48 según la vacante. Señal real y no trivial, pero
+  moderada: el embedding semántico y la referencia externa miden algo
+  similar, no son la misma fórmula.
+- **La explicabilidad por overlap de skills es limitada, y eso quedó
+  documentado con datos reales:** en la demo, 4 de los 5 candidatos top por
+  similitud semántica no comparten ningún skill textual con la vacante —
+  el embedding capta afinidad conceptual que el overlap literal no siempre
+  puede mostrar como evidencia.
+- **Dos bugs de datos reales encontrados y corregidos** (no solo
+  documentados): un BOM incrustado en un nombre de columna, y campos del CV
+  serializados como listas de Python que habrían metido corchetes y la
+  palabra "None" en el texto del embedding si no se parseaban primero.
+- **Un bug real de la API FastAPI, encontrado probando contra un servidor
+  vivo:** Starlette rechaza `NaN` en respuestas JSON (`allow_nan=False`),
+  así que cualquier campo nulo (ej. `age_requirement`, ~43% nulo) tumbaba el
+  endpoint con un 500 — corregido convirtiendo `NaN` a `None` antes de
+  responder.
 
 ## Limitaciones
 
-_Pendiente — se documentarán las limitaciones del dataset y del sistema tras
-el desarrollo (p. ej. dependencia de la calidad del texto extraído de los
-CVs originales, y el hecho de que la explicación generada por LLM requiere
-validación humana antes de usarse en decisiones reales de contratación)._
+- **`matched_score` es un score de un tercero, no una etiqueta humana
+  verificada** — útil como referencia de validación, pero no debe leerse
+  como una medición objetiva perfecta de "el mejor candidato real".
+- **Explicabilidad determinista, no generativa:** el overlap de skills es
+  transparente y sin costo, pero no siempre encuentra evidencia textual
+  aunque la similitud semántica sea alta — una capa de LLM real (fuera de
+  alcance acá, por la razón ya explicada) explicaría mejor esos casos.
+- **Recuperación de candidatos, no un pipeline de extracción de CVs desde
+  PDF/Word** — el dataset ya trae los campos estructurados; un sistema en
+  producción necesitaría ese paso previo (parsing de CVs reales), que este
+  proyecto no cubre.
+- **344 candidatos es un pool chico** para un sistema de producción — el
+  índice FAISS escala bien a volúmenes mucho mayores, pero la validación
+  cuantitativa (Spearman) se hizo sobre esa muestra.
+- **El servicio FastAPI es una demo funcional, no un producto con
+  autenticación, rate limiting ni persistencia** — pensado para mostrar el
+  pipeline de matching, no como base directa de un sistema en producción.
 
 ## Cómo correr este proyecto
 
@@ -79,11 +120,14 @@ source venv/bin/activate  # En Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # 1. Descargar el dataset desde el link de Kaggle indicado arriba
-#    y colocarlo en 05-ai-resume-matching-rag/data/
+#    y colocarlo en 05-ai-resume-matching-rag/data/resume_data.csv
 
-# 2. Explorar el EDA y el desarrollo del pipeline
+# 2. Correr los notebooks en orden (cada uno alimenta al siguiente)
 jupyter notebook 05-ai-resume-matching-rag/notebooks/
+#   01_eda.ipynb -> 02_data_preparation.ipynb -> 03_modeling.ipynb
 
-# 3. Levantar el servicio FastAPI (una vez desarrollado)
-uvicorn app.main:app --reload --app-dir 05-ai-resume-matching-rag/app
+# 3. Levantar el servicio FastAPI (desde 05-ai-resume-matching-rag/)
+cd 05-ai-resume-matching-rag
+uvicorn app.main:app --reload
+# Docs interactivas: http://127.0.0.1:8000/docs
 ```
