@@ -11,6 +11,17 @@
 *.zip
 *.7z
 
+# Excepción: datasets committeados a propósito para que los dashboards
+# desplegados en Streamlit Community Cloud funcionen sin setup manual.
+# El de fraude (creditcard.csv) va por Git LFS por su tamaño (ver .gitattributes).
+# Tiene que ir DESPUÉS de las reglas *.csv/**/data/* de arriba — el orden
+# en .gitignore importa, la última regla que matchea gana.
+!01-bpo-sla-performance/data/call_metrics_dataset.csv
+!02-banking-fraud-detection/data/creditcard.csv
+!03-entertainment-content-strategy/data/netflix_titles.csv
+!04-jira-effort-estimation/data/*.csv
+!04-jira-effort-estimation/data/*.npy
+
 # Modelos entrenados / checkpoints / embeddings / índices vectoriales
 *.pkl
 *.pickle
