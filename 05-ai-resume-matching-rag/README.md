@@ -119,6 +119,14 @@ Siguiendo el framework CRISP-DM adaptado del portafolio (ver notebooks en
   autenticación, rate limiting ni persistencia** — pensado para mostrar el
   pipeline de matching, no como base directa de un sistema en producción.
 
+## Dashboard en vivo
+
+**[ai-resume-matching-rag.streamlit.app](https://ai-resume-matching-rag.streamlit.app/)**
+— demo del motor de matching (mismo embedder, mismo índice FAISS y misma
+explicabilidad que el servicio FastAPI de abajo), sin instalación. El
+servicio FastAPI en sí no está desplegado (Docker en Hugging Face Spaces
+pasó a requerir plan pago) — se corre local siguiendo los pasos de abajo.
+
 ## Cómo correr este proyecto
 
 ```bash
