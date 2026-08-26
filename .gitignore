@@ -21,6 +21,9 @@
 !03-entertainment-content-strategy/data/netflix_titles.csv
 !04-jira-effort-estimation/data/*.csv
 !04-jira-effort-estimation/data/*.npy
+!05-ai-resume-matching-rag/data/resume_data.csv
+!05-ai-resume-matching-rag/data/candidates.faiss
+!05-ai-resume-matching-rag/data/candidate_embeddings.npy
 
 # Modelos entrenados / checkpoints / embeddings / índices vectoriales
 *.pkl
@@ -37,6 +40,11 @@ checkpoints/
 models/
 mlruns/
 wandb/
+
+# El índice FAISS de project 05 se committea a propósito (ver excepción de
+# arriba) — la regla *.faiss de esta sección lo tapa de nuevo, así que hace
+# falta repetir la excepción acá también (última regla que matchea gana).
+!05-ai-resume-matching-rag/data/candidates.faiss
 
 # ============================
 # Entornos virtuales
