@@ -116,6 +116,12 @@ Siguiendo el framework CRISP-DM adaptado del portafolio (ver notebooks en
   — cualquier análisis de tendencia de incorporación de catálogo debe leerse
   con esa fecha de corte en mente.
 
+## Dashboard en vivo
+
+**[miguel-entertainment-content-strategy.streamlit.app](https://miguel-entertainment-content-strategy.streamlit.app/)**
+— sin instalación, corre directo en el navegador (puede tardar unos segundos
+en despertar si nadie lo visitó recientemente).
+
 ## Cómo correr este proyecto
 
 ```bash

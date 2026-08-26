@@ -120,6 +120,12 @@ Siguiendo el framework CRISP-DM adaptado del portafolio (ver notebooks en
 - **MAE ≈ 3 puntos no es una estimación precisa** — el modelo es un punto de
   partida para asistir la conversación de planning poker, no un reemplazo.
 
+## Dashboard en vivo
+
+**[miguel-jira-effort-estimation.streamlit.app](https://miguel-jira-effort-estimation.streamlit.app/)**
+— sin instalación, corre directo en el navegador (puede tardar unos segundos
+en despertar si nadie lo visitó recientemente).
+
 ## Cómo correr este proyecto
 
 ```bash

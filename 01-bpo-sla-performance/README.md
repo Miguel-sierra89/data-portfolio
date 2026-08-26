@@ -112,6 +112,12 @@ Siguiendo el framework CRISP-DM adaptado del portafolio (ver notebooks en
   agente/producto/idioma, así que el análisis de teoría de colas y de
   franjas horarias no fue posible con este dataset.
 
+## Dashboard en vivo
+
+**[miguel-bpo-sla.streamlit.app](https://miguel-bpo-sla.streamlit.app/)** — sin
+instalación, corre directo en el navegador (puede tardar unos segundos en
+despertar si nadie lo visitó recientemente).
+
 ## Cómo correr este proyecto
 
 ```bash

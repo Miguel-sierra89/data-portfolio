@@ -121,6 +121,12 @@ Siguiendo el framework CRISP-DM adaptado del portafolio (ver notebooks en
   modelo mantiene ese desempeño fuera del período evaluado, lo cual debería
   revalidarse con más historia antes de producción.
 
+## Dashboard en vivo
+
+**[miguel-banking-frauddetection.streamlit.app](https://miguel-banking-frauddetection.streamlit.app/)**
+— sin instalación, corre directo en el navegador (puede tardar unos segundos
+en despertar si nadie lo visitó recientemente).
+
 ## Cómo correr este proyecto
 
 ```bash
